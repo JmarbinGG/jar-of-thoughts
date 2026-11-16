@@ -34,7 +34,7 @@ ESP32 GPIO4 ── switch (COM and NO terminals) ── ESP32 GND     (internal 
 - Brightness is hard-capped at 40 % in firmware (`MAX_BRIGHTNESS 100`) to keep heat down.
 - The switch uses the internal pull-up; press = pin pulled low.
 - The 1000 µF / 16 V electrolytic across the ring's power pins soaks up inrush and LED current spikes. Mind the polarity (stripe = negative).
-- The 1N4007 in the 5 V feed drops about 0.7 V, so the ring runs at roughly 4.3 V from USB 5 V. That is a deliberate safety margin; it also keeps the data signal's 3.3 V closer to the ring's logic threshold.
+- The 1N4007 in the 5 V feed drops about 0.7 V, so the ring runs at roughly 4.3 V from USB 5 V. It also helps the ESP32's 3.3 V data signal: the ring needs roughly 0.7 × its supply voltage (about 3 V here) to read a high.
 
 ![Bench wiring: ESP32, ring, resistor, diode, capacitor and switch](docs/photos/bench-wiring.jpg)
 
