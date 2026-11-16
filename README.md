@@ -14,11 +14,11 @@ A WiFi mason-jar lamp. One person presses a button in Telegram, the jar glows on
 | Part | Notes |
 |---|---|
 | ESP32 DevKitC-32E | classic ESP32, 2.4 GHz only |
-| 7-LED WS2812B ring | 5 V, GRB order |
+| 7-LED WS2812B ring | 5 V, GRB order (Mouser 392-333055) |
 | Omron V-155-1C25 micro switch | roller lever; see `cad/` |
-| 330 Ω resistor | in series with the data line |
-| Diode | in series with the ring's 5 V feed (see Wiring) |
-| Electrolytic capacitor | across the ring's 5 V / GND, close to the ring |
+| 330 Ω 1/4 W resistor | in series with the data line (CF1/4CT52A331J) |
+| 1N4007 diode | in series with the ring's 5 V feed (see Wiring) |
+| 1000 µF 16 V electrolytic capacitor | across the ring's 5 V / GND, close to the ring (ESH108M016AH2AA) |
 | Regular-mouth mason jar + metal band | band is glued into the printed lid |
 | Fiberfill / pillow stuffing | diffuses the light |
 | M3 screws x4, USB cable + 5 V adapter | |
@@ -26,14 +26,15 @@ A WiFi mason-jar lamp. One person presses a button in Telegram, the jar glows on
 ## Wiring
 ```
 ESP32 GPIO18 ──[330 Ω]── ring DIN
-ESP32 VIN (5 V) ──►|── ring 5V        (diode in the 5 V feed)
+ESP32 VIN (5 V) ──►|── ring 5V        (1N4007 in the 5 V feed)
+1000 µF 16 V cap between ring 5V and GND, close to the ring
 ESP32 GND ───────────── ring GND
 ESP32 GPIO4 ── switch (COM and NO terminals) ── ESP32 GND     (internal pull-up, no resistor)
 ```
 - Brightness is hard-capped at 40 % in firmware (`MAX_BRIGHTNESS 100`) to keep heat down.
 - The switch uses the internal pull-up; press = pin pulled low.
-- An electrolytic capacitor sits across the ring's power pins to soften inrush and LED current spikes (visible in the photo below).
-- TODO(author): fill in the exact diode part number and the capacitor's value/voltage rating.
+- The 1000 µF / 16 V electrolytic across the ring's power pins soaks up inrush and LED current spikes. Mind the polarity (stripe = negative).
+- The 1N4007 in the 5 V feed drops about 0.7 V, so the ring runs at roughly 4.3 V from USB 5 V. That is a deliberate safety margin; it also keeps the data signal's 3.3 V closer to the ring's logic threshold.
 
 ![Bench wiring: ESP32, ring, resistor, diode, capacitor and switch](docs/photos/bench-wiring.jpg)
 
