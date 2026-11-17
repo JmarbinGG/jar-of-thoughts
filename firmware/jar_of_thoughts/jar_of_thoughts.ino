@@ -123,7 +123,7 @@ const unsigned long DOUBLE_MS     = 400;
 const unsigned long NET_STALL_MS  = 240000UL;
 const int RESTART_HOUR            = 4;
 
-const char* BUILD_TAG = "s5-r7";   // shown in the boot log and /status so you can tell which build is running
+const char* BUILD_TAG = "s5-r8";   // shown in the boot log and /status so you can tell which build is running
 const bool NIGHTLY_RESTART = false; // heap is stable, so the 4 AM restart is off
 const char* DEFAULT_MSG1 = "She pressed the jar";
 const char* DEFAULT_MSG2 = "She double clicked the jar";
@@ -133,7 +133,7 @@ const char* DEFAULT_MSG2 = "She double clicked the jar";
 const NamedColor NAMED[] = {
   {"red", 0xFF0000}, {"orange", 0xFF5A00}, {"yellow", 0xFFC800}, {"green", 0x00FF00},
   {"mint", 0x00FF78}, {"teal", 0x00C896}, {"cyan", 0x00DCFF}, {"blue", 0x003CFF},
-  {"purple", 0x8200FF}, {"lavender", 0x963CFF}, {"magenta", 0xFF00C8}, {"pink", 0xFF285A},
+  {"purple", 0x8200FF}, {"lavender", 0x963CFF}, {"magenta", 0xFF00C8}, {"pink", 0xFF3C8C},
   {"white", 0xFFFFFF}, {"warm", 0xFF9632}, {"amber", 0xFF7800}
 };
 const int NAMED_COUNT = sizeof(NAMED) / sizeof(NAMED[0]);
@@ -432,8 +432,17 @@ String prevInfoText() {
          " dBm, Telegram last OK " + String(prevInfo.telegramAgeSec) + " s before";
 }
 
+// Brightness scale applied by us (not by NeoPixel) so dim colors keep their hue: NeoPixel truncates each
+// channel after scaling, which turns dim pink/purple into plain red. Hard cap still holds: max channel = MAX_BRIGHTNESS.
+float gScale = 1.0f;
 void applyBrightness() {
-  ring.setBrightness(map(cfg.brightnessPct, 0, 100, 0, MAX_BRIGHTNESS));
+  gScale = (cfg.brightnessPct / 100.0f) * (MAX_BRIGHTNESS / 255.0f);
+  ring.setBrightness(255);   // 255 = pass-through in Adafruit_NeoPixel; scaling happens in scaleCh()
+}
+uint8_t scaleCh(uint8_t v, float level) {
+  float x = v * level * gScale + 0.5f;
+  if (x > MAX_BRIGHTNESS) x = MAX_BRIGHTNESS;
+  return (uint8_t)x;
 }
 
 void applyTimezone() {
@@ -916,7 +925,7 @@ void startWeb() {
 void showColor(uint8_t r, uint8_t g, uint8_t b, float level) {
   if (level < 0) level = 0;
   if (level > 1) level = 1;
-  uint32_t c = ring.Color(r * level, g * level, b * level);
+  uint32_t c = ring.Color(scaleCh(r, level), scaleCh(g, level), scaleCh(b, level));
   for (int i = 0; i < LED_COUNT; i++) ring.setPixelColor(i, c);
   ring.show();
 }
@@ -933,7 +942,7 @@ float breathWave(unsigned long now, float seconds) {
 
 void showWhiteFill(int count) {
   for (int i = 0; i < LED_COUNT; i++) {
-    ring.setPixelColor(i, i < count ? ring.Color(255, 255, 255) : 0);
+    ring.setPixelColor(i, i < count ? ring.Color(scaleCh(255, 1.0f), scaleCh(255, 1.0f), scaleCh(255, 1.0f)) : 0);
   }
   ring.show();
 }
@@ -1344,7 +1353,7 @@ void loop() {
       break;
 
     case ST_PULSING:
-      level = 0.05 + 0.95 * breathWave(now, BREATH_SECONDS);
+      level = 0.12 + 0.88 * breathWave(now, BREATH_SECONDS);
       {
         uint32_t tmo = TIMEOUT_MIN[cfg.timeoutIdx];
         if (tmo > 0 && now - stateStart > (unsigned long)tmo * 60000UL) {
@@ -1374,7 +1383,7 @@ void loop() {
       break;
 
     case ST_PREVIEW:
-      level = 0.05 + 0.95 * breathWave(now, 2.5);
+      level = 0.12 + 0.88 * breathWave(now, 2.5);
       if (elapsed >= 5.0) {
         state = ST_IDLE;
         level = 0;
